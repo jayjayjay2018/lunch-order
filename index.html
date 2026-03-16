@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>한솥 점심 주문</title>
+  <style>
+    :root {
+      --primary: #ff6b35;
+      --primary-dark: #e85d2a;
+      --primary-light: #fff5f2;
+      --bg: #f5f5f5;
+      --white: #ffffff;
+      --text: #333333;
+      --text-muted: #888888;
+      --border: #eeeeee;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      background: var(--bg); color: var(--text); font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+    .header { background: var(--primary); color: white; padding: 14px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .header h1 { font-size: 18px; font-weight: 700; }
+    .header p { font-size: 13px; opacity: 0.9; margin-top: 2px; }
+    .container { width: 100%; max-width: 540px; margin: 0 auto; padding: 12px 16px; }
+    .login-card { background: var(--white); border-radius: 16px; padding: 36px 24px; text-align: center; margin-top: 40px; box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+    .login-card h2 { font-size: 22px; margin-bottom: 8px; }
+    .login-card p { color: var(--text-muted); font-size: 15px; margin-bottom: 24px; }
+    .login-input { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: var(--radius); font-size: 16px; outline: none; text-align: center; color: var(--text); }
+    .login-input:focus { border-color: var(--primary); }
+    .login-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: var(--radius); font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 12px; }
+    .login-btn:active { background: var(--primary-dark); }
+    .tabs { display: flex; background: var(--white); border-radius: var(--radius); padding: 4px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    .tab { flex: 1; padding: 11px 4px; text-align: center; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; color: var(--text-muted); border: none; background: none; line-height: 1.3; }
+    .tab.active { background: var(--primary); color: white; }
+    .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .menu-item { background: var(--white); border-radius: var(--radius); padding: 16px 10px; text-align: center; cursor: pointer; box-shadow: var(--shadow); border: 2px solid transparent; min-height: 80px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+    .menu-item:active { background: var(--primary-light); }
+    .menu-item.selected { border-color: var(--primary); background: var(--primary-light); }
+    .menu-name { font-size: 13px; font-weight: 600; margin-bottom: 6px; line-height: 1.4; word-break: keep-all; }
+    .menu-price { font-size: 14px; color: var(--primary); font-weight: 700; }
+    .order-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--white); padding: 12px 16px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 16px rgba(0,0,0,0.1); display: none; z-index: 200; }
+    .order-bar.visible { display: block; }
+    .order-bar-inner { max-width: 540px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+    .qty-control { display: flex; align-items: center; gap: 10px; }
+    .qty-btn { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--primary); background: white; color: var(--primary); font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .qty-btn:active { background: var(--primary-light); }
+    .qty-num { font-size: 17px; font-weight: bold; min-width: 26px; text-align: center; }
+    .order-info { flex: 1; min-width: 0; }
+    .order-info .name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .order-info .price { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .submit-btn { padding: 13px 18px; background: var(--primary); color: white; border: none; border-radius: var(--radius); font-size: 15px; font-weight: bold; cursor: pointer; flex-shrink: 0; }
+    .submit-btn:active { background: var(--primary-dark); }
+    .order-card { background: var(--white); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .order-card .person { font-weight: bold; font-size: 15px; margin-bottom: 10px; }
+    .order-card .item { font-size: 14px; color: #555; padding: 6px 0; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; }
+    .order-card .item:last-child { border-bottom: none; }
+    .settlement-summary { background: var(--primary-light); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+    .settlement-summary .row { display: flex; justify-content: space-between; font-size: 14px; padding: 4px 0; }
+    .settlement-summary .total-row { font-weight: bold; font-size: 16px; border-top: 1px solid #ffd5c8; margin-top: 8px; padding-top: 8px; color: var(--primary); }
+    .person-card { background: var(--white); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .person-card .person-name { font-weight: bold; font-size: 16px; margin-bottom: 10px; }
+    .person-card .person-item { font-size: 13px; color: #666; padding: 3px 0; display: flex; justify-content: space-between; }
+    .person-card .person-total { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .person-card .person-total span:first-child { font-size: 14px; color: var(--text-muted); }
+    .person-card .amount { font-size: 20px; font-weight: bold; color: var(--primary); }
+    .manager-badge { background: var(--primary); color: white; padding: 12px 16px; border-radius: var(--radius); text-align: center; font-size: 15px; font-weight: bold; margin-bottom: 14px; }
+    .section-title { font-size: 14px; font-weight: bold; margin-bottom: 10px; color: #555; }
+    .manager-input-area { background: var(--white); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .manager-row { display: flex; gap: 8px; }
+    .manager-input { flex: 1; padding: 13px 12px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; outline: none; color: var(--text); min-width: 0; }
+    .manager-input:focus { border-color: var(--primary); }
+    .manager-btn { padding: 13px 16px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+    .manager-btn:active { background: var(--primary-dark); }
+    .danger-btn { width: 100%; padding: 14px; background: white; border: 2px solid #ff4444; border-radius: var(--radius); font-size: 15px; color: #ff4444; cursor: pointer; margin-top: 8px; font-weight: 600; }
+    .danger-btn:active { background: #fff5f5; }
+    .empty { text-align: center; padding: 48px 16px; color: var(--text-muted); font-size: 15px; }
+    .loading { text-align: center; padding: 48px 16px; color: var(--text-muted); font-size: 14px; }
+    .refresh-btn { width: 100%; padding: 13px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; color: #555; cursor: pointer; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .refresh-btn:active { background: var(--bg); }
+    .pb { padding-bottom: 90px; }
+    .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 11px 22px; border-radius: 24px; font-size: 14px; opacity: 0; transition: opacity 0.25s; z-index: 999; white-space: nowrap; max-width: 90vw; text-align: center; pointer-events: none; }
+    .toast.show { opacity: 1; }
+    @media (min-width: 540px) {
+      .menu-grid { grid-template-columns: 1fr 1fr 1fr; }
+      .tab { font-size: 13px; padding: 12px 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🍱 한솥 점심 주문</h1>
+  <p id="headerUser"></p>
+</div>
+
+<div class="container" id="loginScreen">
+  <div class="login-card">
+    <h2>👋 안녕하세요!</h2>
+    <p>이름을 입력하고 시작하세요</p>
+    <input class="login-input" id="nameInput" type="text" placeholder="이름 입력" maxlength="10" autocomplete="name">
+    <button class="login-btn" onclick="login()">시작하기</button>
+  </div>
+</div>
+
+<div class="container" id="mainScreen" style="display:none">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('menu')">🍱<br>메뉴</button>
+    <button class="tab" onclick="showTab('orders')">📋<br>주문현황</button>
+    <button class="tab" onclick="showTab('settlement')">💳<br>정산</button>
+    <button class="tab" onclick="showTab('settings')">⚙️<br>설정</button>
+  </div>
+  <div id="tab-menu" class="pb">
+    <p class="section-title">메뉴를 선택하세요</p>
+    <div class="menu-grid" id="menuGrid"><div class="loading">메뉴 불러오는 중...</div></div>
+  </div>
+  <div id="tab-orders" style="display:none">
+    <button class="refresh-btn" onclick="loadOrders()">🔄 새로고침</button>
+    <div id="orderList"><div class="loading">불러오는 중...</div></div>
+  </div>
+  <div id="tab-settlement" style="display:none">
+    <button class="refresh-btn" onclick="loadSettlement()">🔄 새로고침</button>
+    <div id="settlementContent"><div class="loading">불러오는 중...</div></div>
+  </div>
+  <div id="tab-settings" style="display:none">
+    <div class="manager-input-area">
+      <p class="section-title">💳 결제 담당자 변경</p>
+      <div class="manager-row">
+        <input class="manager-input" id="managerInput" type="text" placeholder="담당자 이름">
+        <button class="manager-btn" onclick="changeManager()">변경</button>
+      </div>
+    </div>
+    <div class="manager-input-area">
+      <p class="section-title">➕ 메뉴 추가</p>
+      <div class="manager-row" style="margin-bottom:10px">
+        <input class="manager-input" id="newMenuName" type="text" placeholder="메뉴 이름">
+      </div>
+      <div class="manager-row">
+        <input class="manager-input" id="newMenuPrice" type="number" placeholder="가격 (숫자만)">
+        <button class="manager-btn" onclick="addMenuItem()">추가</button>
+      </div>
+    </div>
+    <div class="manager-input-area">
+      <p class="section-title">✏️ 메뉴 가격 수정</p>
+      <div class="manager-row" style="margin-bottom:10px">
+        <select class="manager-input" id="editMenuSelect">
+          <option value="">메뉴 선택...</option>
+        </select>
+      </div>
+      <div class="manager-row">
+        <input class="manager-input" id="editMenuPrice" type="number" placeholder="새 가격 (숫자만)">
+        <button class="manager-btn" onclick="updateMenuPrice()">수정</button>
+      </div>
+    </div>
+    <button class="danger-btn" onclick="resetOrders()">🗑️ 주문 초기화</button>
+  </div>
+</div>
+
+<div class="order-bar" id="orderBar">
+  <div class="order-bar-inner">
+    <div class="order-info">
+      <div class="name" id="barMenuName"></div>
+      <div class="price" id="barMenuPrice"></div>
+    </div>
+    <div class="qty-control">
+      <button class="qty-btn" onclick="changeQty(-1)">−</button>
+      <span class="qty-num" id="qtyNum">1</span>
+      <button class="qty-btn" onclick="changeQty(1)">+</button>
+    </div>
+    <button class="submit-btn" onclick="submitOrder()">주문</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ⚠️ 여기에 Apps Script 배포 URL 붙여넣기
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzm3HSonimWabgNQoKlWKlp3Xb2mOT63gjmd3-irfGX7gAw5-12nLdeP2Hzx12WnFi8/exec";
+
+  let userName = '', selectedMenu = null, selectedPrice = 0, qty = 1;
+
+  // API 호출 공통 함수 (GET)
+  async function apiGet(action, params = {}) {
+    const url = new URL(SCRIPT_URL);
+    url.searchParams.set('action', action);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const res = await fetch(url.toString());
+    const json = await res.json();
+    return json.data;
+  }
+
+  // API 호출 공통 함수 (POST)
+  async function apiPost(action, body = {}) {
+    const res = await fetch(SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action, ...body })
+    });
+    const json = await res.json();
+    return json.data;
+  }
+
+  function login() {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) { showToast('이름을 입력해주세요!'); return; }
+    userName = name;
+    localStorage.setItem('userName', name);
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display = 'block';
+    document.getElementById('headerUser').textContent = name + '님';
+    loadMenu();
+  }
+
+  window.onload = function() {
+    const saved = localStorage.getItem('userName');
+    if (saved) document.getElementById('nameInput').value = saved;
+    document.getElementById('nameInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') login();
+    });
+  };
+
+  function showTab(tab) {
+    ['menu','orders','settlement','settings'].forEach(t => {
+      document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    });
+    document.querySelectorAll('.tab').forEach((el, i) => {
+      el.classList.toggle('active', ['menu','orders','settlement','settings'][i] === tab);
+    });
+    if (tab === 'orders') loadOrders();
+    if (tab === 'settlement') loadSettlement();
+    if (tab === 'settings') loadMenuForSettings();
+    if (tab !== 'menu') {
+      selectedMenu = null;
+      document.getElementById('orderBar').classList.remove('visible');
+      document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('selected'));
+    }
+  }
+
+  async function loadMenu() {
+    try {
+      const menu = await apiGet('getMenu');
+      renderMenu(menu);
+    } catch { showToast('메뉴 불러오기 실패'); }
+  }
+
+  function renderMenu(menu) {
+    const grid = document.getElementById('menuGrid');
+    if (!menu || Object.keys(menu).length === 0) {
+      grid.innerHTML = '<div class="empty">메뉴를 불러올 수 없어요</div>';
+      return;
+    }
+    grid.innerHTML = Object.entries(menu).map(([name, price]) => `
+      <div class="menu-item" onclick="selectMenu(this, '${name.replace(/'/g,"\\'")}', ${price})">
+        <div class="menu-name">${name}</div>
+        <div class="menu-price">${price.toLocaleString()}원</div>
+      </div>
+    `).join('');
+  }
+
+  function selectMenu(el, name, price) {
+    document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedMenu = name; selectedPrice = price; qty = 1;
+    document.getElementById('qtyNum').textContent = 1;
+    document.getElementById('barMenuName').textContent = name;
+    document.getElementById('barMenuPrice').textContent = price.toLocaleString() + '원';
+    document.getElementById('orderBar').classList.add('visible');
+  }
+
+  function changeQty(delta) {
+    qty = Math.max(1, qty + delta);
+    document.getElementById('qtyNum').textContent = qty;
+    document.getElementById('barMenuPrice').textContent = (selectedPrice * qty).toLocaleString() + '원';
+  }
+
+  async function submitOrder() {
+    if (!selectedMenu) return;
+    showToast('주문 중...');
+    try {
+      const orderPart = selectedMenu + (qty > 1 ? ' ' + qty : '');
+      await apiPost('addOrder', { userName, orderPart });
+      showToast('✅ ' + selectedMenu + ' 주문 완료!');
+      selectedMenu = null;
+      document.getElementById('orderBar').classList.remove('visible');
+      document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('selected'));
+    } catch { showToast('주문 실패, 다시 시도해주세요'); }
+  }
+
+  async function loadOrders() {
+    document.getElementById('orderList').innerHTML = '<div class="loading">불러오는 중...</div>';
+    try {
+      const orders = await apiGet('getOrderList');
+      renderOrders(orders);
+    } catch { showToast('불러오기 실패'); }
+  }
+
+  function renderOrders(orders) {
+    const el = document.getElementById('orderList');
+    if (!orders || orders.length === 0) { el.innerHTML = '<div class="empty">아직 주문이 없어요</div>'; return; }
+    const byPerson = {};
+    orders.forEach(o => { if (!byPerson[o.name]) byPerson[o.name] = []; byPerson[o.name].push(o); });
+    el.innerHTML = Object.entries(byPerson).map(([name, items]) => `
+      <div class="order-card">
+        <div class="person">👤 ${name}</div>
+        ${items.map(i => `<div class="item"><span>${i.menu} × ${i.qty}개</span><span>${(i.price * i.qty).toLocaleString()}원</span></div>`).join('')}
+      </div>
+    `).join('');
+  }
+
+  async function loadSettlement() {
+    document.getElementById('settlementContent').innerHTML = '<div class="loading">계산 중...</div>';
+    try {
+      const data = await apiGet('getSettlement');
+      renderSettlement(data);
+    } catch { showToast('정산 불러오기 실패'); }
+  }
+
+  function renderSettlement(data) {
+    const el = document.getElementById('settlementContent');
+    if (!data) { el.innerHTML = '<div class="empty">주문 내역이 없어요</div>'; return; }
+    el.innerHTML = `
+      ${data.manager ? `<div class="manager-badge">💳 ${data.manager}에게 이체해주세요</div>` : ''}
+      <div class="settlement-summary">
+        <div class="row"><span>👥 주문 인원</span><span>${data.headCount}명</span></div>
+        <div class="row"><span>📦 음식 합계</span><span>${data.grandTotal.toLocaleString()}원</span></div>
+        <div class="row"><span>🚗 배달비 1인분</span><span>${data.deliveryPerPerson.toLocaleString()}원</span></div>
+        <div class="row total-row"><span>💰 총합계</span><span>${data.totalWithDelivery.toLocaleString()}원</span></div>
+      </div>
+      ${data.persons.map(p => `
+        <div class="person-card">
+          <div class="person-name">👤 ${p.name}</div>
+          ${p.items.map(i => `<div class="person-item"><span>${i.menu} × ${i.qty}개</span><span>${i.amount.toLocaleString()}원</span></div>`).join('')}
+          <div class="person-item"><span>🚗 배달비</span><span>${p.deliveryShare.toLocaleString()}원</span></div>
+          <div class="person-total"><span>이체할 금액</span><span class="amount">${p.total.toLocaleString()}원</span></div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  async function changeManager() {
+    const name = document.getElementById('managerInput').value.trim();
+    if (!name) { showToast('이름을 입력해주세요'); return; }
+    await apiPost('setManager', { name });
+    showToast('✅ 담당자가 ' + name + '으로 변경됐어요');
+  }
+
+  async function resetOrders() {
+    if (!confirm('주문 목록을 초기화할까요?')) return;
+    await apiPost('clearOrders');
+    showToast('🗑️ 초기화 완료');
+    loadOrders();
+  }
+
+  async function loadMenuForSettings() {
+    try {
+      const menuList = await apiGet('getMenuList');
+      renderMenuForSettings(menuList);
+    } catch { showToast('메뉴 목록 불러오기 실패'); }
+  }
+
+  function renderMenuForSettings(menuList) {
+    const select = document.getElementById('editMenuSelect');
+    select.innerHTML = '<option value="">메뉴 선택...</option>';
+    menuList.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.name;
+      opt.textContent = item.name + ' (' + item.price.toLocaleString() + '원)';
+      select.appendChild(opt);
+    });
+    select.onchange = function() {
+      const found = menuList.find(m => m.name === this.value);
+      if (found) document.getElementById('editMenuPrice').value = found.price;
+    };
+  }
+
+  async function addMenuItem() {
+    const name = document.getElementById('newMenuName').value.trim();
+    const price = document.getElementById('newMenuPrice').value.trim();
+    if (!name) { showToast('메뉴 이름을 입력해주세요'); return; }
+    if (!price || isNaN(price)) { showToast('가격을 숫자로 입력해주세요'); return; }
+    showToast('추가 중...');
+    const res = await apiPost('addMenu', { menuName: name, price: Number(price) });
+    showToast(res.success ? '✅ ' + res.message : '❌ ' + res.message);
+    if (res.success) {
+      document.getElementById('newMenuName').value = '';
+      document.getElementById('newMenuPrice').value = '';
+      loadMenuForSettings(); loadMenu();
+    }
+  }
+
+  async function updateMenuPrice() {
+    const name = document.getElementById('editMenuSelect').value;
+    const price = document.getElementById('editMenuPrice').value.trim();
+    if (!name) { showToast('메뉴를 선택해주세요'); return; }
+    if (!price || isNaN(price)) { showToast('가격을 숫자로 입력해주세요'); return; }
+    showToast('수정 중...');
+    const res = await apiPost('updateMenuPrice', { menuName: name, newPrice: Number(price) });
+    showToast(res.success ? '✅ ' + res.message : '❌ ' + res.message);
+    if (res.success) { loadMenuForSettings(); loadMenu(); }
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+</script>
+</body>
+</html>
