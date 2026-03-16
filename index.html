@@ -157,6 +157,16 @@
         <button class="manager-btn" onclick="updateMenuPrice()">수정</button>
       </div>
     </div>
+    <!-- 메뉴 삭제 -->
+    <div class="manager-input-area">
+      <p class="section-title">🗑️ 메뉴 삭제</p>
+      <div class="manager-row" style="margin-bottom:10px">
+        <select class="manager-input" id="deleteMenuSelect">
+          <option value="">삭제할 메뉴 선택...</option>
+        </select>
+      </div>
+      <button class="danger-btn" style="margin-top:0" onclick="deleteMenuItem()">삭제</button>
+    </div>
     <button class="danger-btn" onclick="resetOrders()">🗑️ 주문 초기화</button>
   </div>
 </div>
@@ -363,18 +373,29 @@
   }
 
   function renderMenuForSettings(menuList) {
-    const select = document.getElementById('editMenuSelect');
-    select.innerHTML = '<option value="">메뉴 선택...</option>';
+    // 가격 수정용 드롭다운
+    const editSelect = document.getElementById('editMenuSelect');
+    editSelect.innerHTML = '<option value="">메뉴 선택...</option>';
     menuList.forEach(item => {
       const opt = document.createElement('option');
       opt.value = item.name;
       opt.textContent = item.name + ' (' + item.price.toLocaleString() + '원)';
-      select.appendChild(opt);
+      editSelect.appendChild(opt);
     });
-    select.onchange = function() {
+    editSelect.onchange = function() {
       const found = menuList.find(m => m.name === this.value);
       if (found) document.getElementById('editMenuPrice').value = found.price;
     };
+
+    // 삭제용 드롭다운
+    const deleteSelect = document.getElementById('deleteMenuSelect');
+    deleteSelect.innerHTML = '<option value="">삭제할 메뉴 선택...</option>';
+    menuList.forEach(item => {
+      const opt = document.createElement('option');
+      opt.value = item.name;
+      opt.textContent = item.name + ' (' + item.price.toLocaleString() + '원)';
+      deleteSelect.appendChild(opt);
+    });
   }
 
   async function addMenuItem() {
@@ -401,6 +422,19 @@
     const res = await apiPost('updateMenuPrice', { menuName: name, newPrice: Number(price) });
     showToast(res.success ? '✅ ' + res.message : '❌ ' + res.message);
     if (res.success) { loadMenuForSettings(); loadMenu(); }
+  }
+
+  async function deleteMenuItem() {
+    const name = document.getElementById('deleteMenuSelect').value;
+    if (!name) { showToast('삭제할 메뉴를 선택해주세요'); return; }
+    if (!confirm(name + ' 을(를) 삭제할까요?')) return;
+    showToast('삭제 중...');
+    const res = await apiPost('deleteMenu', { menuName: name });
+    showToast(res.success ? '✅ ' + res.message : '❌ ' + res.message);
+    if (res.success) {
+      loadMenuForSettings();
+      loadMenu();
+    }
   }
 
   function showToast(msg) {
